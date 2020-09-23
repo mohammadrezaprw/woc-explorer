@@ -1,23 +1,23 @@
 module.exports = {
-	
+
 	// Edit "rpc" below to target your node.
 	// You may delete this section if you wish to connect manually via the UI.
 
 	rpc: {
-		host:"localhost",
-		port:8332,
-		username:"username",
-		password:"password"
+		host: process.env.BTC_RPC_HOST,
+		port: parseInt(process.env.BTC_RPC_PORT),
+		username: process.env.BTC_RPC_USER,
+		password: process.env.BTC_RPC_PASSWORD
 	},
 
 	// optional: enter your api access key from ipstack.com below
 	// to include a map of the estimated locations of your node's
 	// peers
-	ipStackComApiAccessKey:"",
+	ipStackComApiAccessKey: "",
 
 	// optional: GA tracking code
-	googleAnalyticsTrackingId:"",
+	googleAnalyticsTrackingId: "",
 
 	// optional: sentry.io error-tracking url
-	sentryUrl:"",
+	sentryUrl: "",
 };

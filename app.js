@@ -2,8 +2,18 @@
 
 'use strict';
 
-var express = require('express');
 var path = require('path');
+var dotenv = require("dotenv");
+var fs = require('fs');
+
+var configPaths = [path.join(process.cwd(), '.env')];
+configPaths.filter(fs.existsSync).forEach(path => {
+	console.log('Loading env file:', path);
+	dotenv.config({ path });
+});
+global.cacheStats = {};
+
+var express = require('express');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
@@ -24,7 +34,7 @@ var qrcode = require("qrcode");
 var fs = require('fs');
 var electrumApi = require("./app/api/electrumApi.js");
 
-var crawlerBotUserAgentStrings = [ "Googlebot", "Bingbot", "Slurp", "DuckDuckBot", "Baiduspider", "YandexBot", "Sogou", "Exabot", "facebot", "ia_archiver" ];
+var crawlerBotUserAgentStrings = ["Googlebot", "Bingbot", "Slurp", "DuckDuckBot", "Baiduspider", "YandexBot", "Sogou", "Exabot", "facebot", "ia_archiver"];
 
 
 var baseActionsRouter = require('./routes/baseActionsRouter');
@@ -61,7 +71,7 @@ process.on("unhandledRejection", (reason, p) => {
 
 
 
-app.runOnStartup = function() {
+app.runOnStartup = function () {
 	global.config = config;
 	global.coinConfig = coins[config.coin];
 	global.coinConfigs = coins;
@@ -94,15 +104,15 @@ app.runOnStartup = function() {
 	}
 
 	if (config.donationAddresses) {
-		var getDonationAddressQrCode = function(coinId) {
-			qrcode.toDataURL(config.donationAddresses[coinId].address, function(err, url) {
+		var getDonationAddressQrCode = function (coinId) {
+			qrcode.toDataURL(config.donationAddresses[coinId].address, function (err, url) {
 				global.donationAddressQrCodeUrls[coinId] = url;
 			});
 		};
 
 		global.donationAddressQrCodeUrls = {};
 
-		config.donationAddresses.coins.forEach(function(item) {
+		config.donationAddresses.coins.forEach(function (item) {
 			getDonationAddressQrCode(item);
 		});
 	}
@@ -112,11 +122,11 @@ app.runOnStartup = function() {
 	global.specialAddresses = {};
 
 	if (config.donationAddresses && config.donationAddresses[coinConfig.ticker]) {
-		global.specialAddresses[config.donationAddresses[coinConfig.ticker].address] = {type:"donation"};
+		global.specialAddresses[config.donationAddresses[coinConfig.ticker].address] = { type: "donation" };
 	}
 
 	if (global.coinConfig.historicalData) {
-		global.coinConfig.historicalData.forEach(function(item) {
+		global.coinConfig.historicalData.forEach(function (item) {
 			if (item.type == "blockheight") {
 				global.specialBlocks[item.blockHash] = item;
 
@@ -124,18 +134,18 @@ app.runOnStartup = function() {
 				global.specialTransactions[item.txid] = item;
 
 			} else if (item.type == "address") {
-				global.specialAddresses[item.address] = {type:"fun", addressInfo:item};
+				global.specialAddresses[item.address] = { type: "fun", addressInfo: item };
 			}
 		});
 	}
 
 	if (config.electrumXServers && config.electrumXServers.length > 0) {
-		electrumApi.connectToServers().then(function() {
+		electrumApi.connectToServers().then(function () {
 			console.log("Live with ElectrumX API.");
 
 			global.electrumApi = electrumApi;
-			
-		}).catch(function(err) {
+
+		}).catch(function (err) {
 			console.log("Error 31207ugf4e0fed: " + err + ", while initializing ElectrumX API");
 		});
 	}
@@ -144,32 +154,32 @@ app.runOnStartup = function() {
 		var promises = [];
 
 		for (var i = 0; i < global.coinConfig.miningPoolsConfigUrls.length; i++) {
-			promises.push(new Promise(function(resolve, reject) {
-				request(global.coinConfig.miningPoolsConfigUrls[i], function(error, response, body) {
+			promises.push(new Promise(function (resolve, reject) {
+				request(global.coinConfig.miningPoolsConfigUrls[i], function (error, response, body) {
 					if (!error && response && response.statusCode && response.statusCode == 200) {
 						var responseBody = JSON.parse(body);
 
 						resolve(responseBody);
-						
+
 					} else {
 						console.log("Error:");
 						console.log(error);
 						console.log("Response:");
 						console.log(response);
 
-						resolve({"coinbase_tags" : {}, "payout_addresses":{}});
+						resolve({ "coinbase_tags": {}, "payout_addresses": {} });
 					}
 				});
 			}));
 		}
 
-		Promise.all(promises).then(function(results) {
+		Promise.all(promises).then(function (results) {
 			global.miningPoolsConfigs = results;
 
 			for (var i = 0; i < global.miningPoolsConfigs.length; i++) {
 				for (var x in global.miningPoolsConfigs[i].payout_addresses) {
 					if (global.miningPoolsConfigs[i].payout_addresses.hasOwnProperty(x)) {
-						global.specialAddresses[x] = {type:"minerPayout", minerInfo:global.miningPoolsConfigs[i].payout_addresses[x]};
+						global.specialAddresses[x] = { type: "minerPayout", minerInfo: global.miningPoolsConfigs[i].payout_addresses[x] };
 					}
 				}
 			}
@@ -194,7 +204,7 @@ app.runOnStartup = function() {
 	setInterval(utils.logMemoryUsage, 5000);
 };
 
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
 	// make session available in templates
 	res.locals.session = req.session;
 
@@ -213,7 +223,7 @@ app.use(function(req, res, next) {
 
 	res.locals.config = global.config;
 	res.locals.coinConfig = global.coinConfig;
-	
+
 	res.locals.host = req.session.host;
 	res.locals.port = req.session.port;
 
@@ -280,10 +290,10 @@ app.use(function(req, res, next) {
 
 	if (req.session.userMessage) {
 		res.locals.userMessage = req.session.userMessage;
-		
+
 		if (req.session.userMessageType) {
 			res.locals.userMessageType = req.session.userMessageType;
-			
+
 		} else {
 			res.locals.userMessageType = "warning";
 		}
@@ -307,7 +317,7 @@ app.use(function(req, res, next) {
 app.use('/', baseActionsRouter);
 
 /// catch 404 and forwarding to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
 	var err = new Error('Not Found');
 	err.status = 404;
 	next(err);
@@ -318,7 +328,7 @@ app.use(function(req, res, next) {
 // development error handler
 // will print stacktrace
 if (app.get('env') === 'development') {
-	app.use(function(err, req, res, next) {
+	app.use(function (err, req, res, next) {
 		res.status(err.status || 500);
 		res.render('error', {
 			message: err.message,
@@ -329,7 +339,7 @@ if (app.get('env') === 'development') {
 
 // production error handler
 // no stacktraces leaked to user
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
 	res.status(err.status || 500);
 	res.render('error', {
 		message: err.message,
